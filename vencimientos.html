@@ -555,6 +555,7 @@
       <span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:var(--gray-light);display:inline-block;transition:background 0.3s"></span>
       <span id="sync-txt">—</span>
     </span>
+    <button id="btn-sync-manual" onclick="syncManual()" title="Subir datos ahora" style="background:var(--surface2);border:1px solid var(--border);color:var(--accent-light);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer">↑ Subir</button>
     <button class="btn-add-product" onclick="openModalProducto()">+ Producto</button>
   </div>
 </div>
@@ -722,6 +723,15 @@ async function pushToCloud() {
     if (!res.ok) throw new Error(res.status);
     setSyncStatus('ok');
   } catch(e) { setSyncStatus('error'); }
+}
+
+async function syncManual() {
+  const btn = document.getElementById('btn-sync-manual');
+  if (btn) { btn.textContent = '...'; btn.disabled = true; }
+  await pushToCloud();
+  if (btn) { btn.textContent = '✓ Subido'; btn.disabled = false; }
+  setTimeout(() => { if (btn) btn.textContent = '↑ Subir'; }, 2000);
+  toast('Datos subidos manualmente ✓');
 }
 
 async function pullFromCloud() {

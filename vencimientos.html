@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Control de Vencimientos</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3250;
+    --text: #e8eaf6;
+    --text-muted: #7b82a8;
+    --green: #1a7a3c;
+    --green-light: #2dba5c;
+    --green-bg: #0d2e1a;
+    --orange: #9a5200;
+    --orange-light: #f28c28;
+    --orange-bg: #2e1a00;
+    --red: #8b1a1a;
+    --red-light: #f23c3c;
+    --red-bg: #2e0d0d;
+    --gray: #3a3f5c;
+    --gray-light: #7b82a8;
+    --gray-bg: #1a1d27;
+    --accent: #5c6bc0;
+    --accent-light: #7986cb;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text);
+  }
+  .header-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+  .btn-add-product {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-add-product:active { opacity: 0.8; }
+
+  /* FILTROS */
+  .filters {
+    padding: 10px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .filter-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  /* LOCAL SELECTOR */
+  .local-bar {
+    padding: 10px 16px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .local-bar::-webkit-scrollbar { display: none; }
+  .local-tab {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .local-tab.active {
+    background: var(--surface);
+    border-color: var(--accent-light);
+    color: var(--accent-light);
+  }
+  .local-tab .badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--red-light);
+    color: white;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+
+  /* CONTENT */
+  .content { padding: 12px 16px; padding-bottom: 80px; }
+
+  /* MARCA GRUPO */
+  .marca-group { margin-bottom: 20px; }
+  .marca-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 6px 10px;
+    background: var(--surface2);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent);
+  }
+  .marca-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .marca-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+
+  /* PRODUCTO CARD */
+  .product-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .product-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .product-name {
+    font-size: 13px;
+    font-weight: 600;
+    flex: 1;
+  }
+  .product-urgency-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-red { background: var(--red-light); box-shadow: 0 0 6px var(--red-light); }
+  .dot-orange { background: var(--orange-light); }
+  .dot-green { background: var(--green-light); }
+  .dot-gray { background: var(--gray-light); }
+
+  .product-summary {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  /* FECHAS */
+  .fechas-container {
+    padding: 0 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .fecha-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .fecha-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+  }
+  .fecha-chip {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 5px;
+  }
+  .chip-red { background: var(--red-bg); color: var(--red-light); border: 1px solid var(--red); }
+  .chip-orange { background: var(--orange-bg); color: var(--orange-light); border: 1px solid var(--orange); }
+  .chip-green { background: var(--green-bg); color: var(--green-light); border: 1px solid var(--green); }
+  .chip-gray { background: var(--gray-bg); color: var(--gray-light); border: 1px solid var(--gray); }
+
+  .dias-label {
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .label-red { color: var(--red-light); }
+  .label-orange { color: var(--orange-light); }
+  .label-green { color: var(--green-light); }
+  .label-gray { color: var(--gray-light); }
+
+  .fecha-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .btn-retirar {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .btn-retirar:active { opacity: 0.7; }
+  .btn-edit-fecha {
+    font-size: 15px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px 4px;
+  }
+  .retirada-row {
+    opacity: 0.45;
+    text-decoration: line-through;
+  }
+
+  .btn-add-fecha {
+    width: 100%;
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--text-muted);
+    border-radius: 8px;
+    padding: 7px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .btn-add-fecha:active { opacity: 0.7; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 16px 16px 0 0;
+    padding: 20px 20px 32px;
+    width: 100%;
+    max-width: 500px;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+  .form-group { margin-bottom: 14px; }
+  .form-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .form-input, .form-select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  .form-input:focus, .form-select:focus {
+    border-color: var(--accent-light);
+  }
+  .form-select option { background: var(--surface2); }
+  .btn-primary {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 13px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .btn-primary:active { opacity: 0.8; }
+  .btn-secondary {
+    width: 100%;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+
+  /* EMPTY */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    gap: 12px;
+    padding: 8px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .legend::-webkit-scrollbar { display: none; }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .legend-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface2);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    z-index: 500;
+    border: 1px solid var(--border);
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  .section-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    margin-top: 2px;
+  }
+  .form-dates-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
+  .form-date-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .form-date-row .form-input { flex: 1; }
+  .btn-remove-date {
+    background: var(--red-bg);
+    color: var(--red-light);
+    border: none;
+    border-radius: 6px;
+    padding: 9px 10px;
+    cursor: pointer;
+    font-size: 15px;
+  }
+  .btn-add-date {
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--text-muted);
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  /* INPUT RÁPIDO DD/MM */
+  .fecha-rapida-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .fecha-rapida-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    width: 52px;
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+  .fecha-rapida-inputs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    flex: 1;
+    transition: border-color 0.15s;
+  }
+  .fecha-rapida-inputs.focused { border-color: var(--accent-light); }
+  .fecha-rapida-inputs.filled { border-color: var(--green); }
+  .fi-sep { color: var(--text-muted); font-size: 18px; font-weight: 700; margin: 0 2px; }
+  .fi {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 22px;
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    text-align: center;
+    outline: none;
+    caret-color: var(--accent-light);
+    -webkit-appearance: none;
+  }
+  .fi-dd { width: 44px; }
+  .fi-mm { width: 44px; }
+  .fi-placeholder { color: var(--text-muted); font-size: 12px; }
+  .fecha-rapida-check {
+    font-size: 18px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .fecha-rapida-check.show { opacity: 1; }
+  .fecha-rapida-add {
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--accent-light);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 4px;
+    margin-bottom: 12px;
+  }
+  .fecha-rapida-save {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 13px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .fecha-rapida-save:active { opacity: 0.8; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">📦 Control de Vencimientos</div>
+    <div class="header-sub" id="fecha-hoy"></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span id="sync-indicator" style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:4px">
+      <span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:var(--gray-light);display:inline-block;transition:background 0.3s"></span>
+      <span id="sync-txt">—</span>
+    </span>
+    <button class="btn-add-product" onclick="openModalProducto()">+ Producto</button>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#f23c3c"></div> ≤3 días</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f28c28"></div> 4–10 días</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#2dba5c"></div> +10 días</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#7b82a8"></div> Retirado</div>
+</div>
+
+<div class="filters" id="filtros-marcas">
+  <button class="filter-btn active" onclick="setFiltroMarca('Todas')" id="fbtn-Todas">Todas</button>
+</div>
+
+<div class="local-bar" id="local-bar">
+  <button class="local-tab" onclick="openModalLocal()" style="border-style:dashed;color:var(--accent-light)">+ Super</button>
+</div>
+
+<div class="content" id="content"></div>
+
+<!-- MODAL PRODUCTO -->
+<div class="modal-overlay" id="modal-producto">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modal-producto-title">Nuevo Producto</span>
+      <button class="modal-close" onclick="closeModal('modal-producto')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Marca</label>
+      <select class="form-select" id="prod-marca">
+        <option value="">Seleccionar...</option>
+        <option>SER</option>
+        <option>Yogurísimo</option>
+        <option>Activia</option>
+        <option>Actimel</option>
+        <option>Danette</option>
+        <option>Danonino</option>
+        <option>Serenito</option>
+        <option>CasanCrem</option>
+        <option>La Serenísima</option>
+        <option>Citric</option>
+        <option>Silk</option>
+        <option>Levex</option>
+        <option>Otra</option>
+      </select>
+    </div>
+    <div class="form-group" id="marca-custom-group" style="display:none">
+      <label class="form-label">Nombre de marca personalizada</label>
+      <input class="form-input" id="prod-marca-custom" placeholder="Ej: Mi Marca">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre del producto</label>
+      <input class="form-input" id="prod-nombre" placeholder="Ej: Yogur natural 200g">
+    </div>
+    <button class="btn-primary" onclick="guardarProducto()">Guardar producto</button>
+    <button class="btn-secondary" onclick="closeModal('modal-producto')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL FECHA RÁPIDO -->
+<div class="modal-overlay" id="modal-fecha">
+  <div class="modal" style="padding-bottom:24px">
+    <div class="modal-title">
+      <span id="modal-fecha-title">Fechas de vencimiento</span>
+      <button class="modal-close" onclick="closeModal('modal-fecha')">✕</button>
+    </div>
+    <div class="form-group" id="fecha-local-group">
+      <label class="form-label">Super</label>
+      <select class="form-select" id="fecha-local-sel" onchange="onLocalSelChange()">
+        <option value="">Seleccionar...</option>
+      </select>
+    </div>
+    <div id="fecha-rapida-container"></div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR FECHA INDIVIDUAL -->
+<div class="modal-overlay" id="modal-edit-fecha">
+  <div class="modal" style="padding-bottom:24px">
+    <div class="modal-title">
+      <span>Editar fecha</span>
+      <button class="modal-close" onclick="closeModal('modal-edit-fecha')">✕</button>
+    </div>
+    <div id="edit-fecha-rapida"></div>
+  </div>
+</div>
+
+<!-- MODAL LOCAL -->
+<div class="modal-overlay" id="modal-local">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modal-local-title">Agregar Super</span>
+      <button class="modal-close" onclick="closeModal('modal-local')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre del supermercado</label>
+      <input class="form-input" id="local-nombre" placeholder="Ej: TATA 500">
+    </div>
+    <button class="btn-primary" onclick="guardarLocal()">Guardar</button>
+    <button class="btn-secondary" id="btn-borrar-local" onclick="borrarLocal()" style="display:none;color:var(--red-light);border-color:var(--red)">Eliminar este super</button>
+    <button class="btn-secondary" onclick="closeModal('modal-local')">Cancelar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================== DATA =====================
+const LOCALES_DEFAULT = ['DEVOTO 16','DISCO 15','DORADO POLAKOF','EXPRESS RODALIR','TATA 306','TATA 403','TATA 329'];
+const CATALOG_VERSION = 3;
+
+let state = JSON.parse(localStorage.getItem('venc_state') || 'null') || {
+  productos: [],
+  locales: [...LOCALES_DEFAULT],
+  fechas: {},
+  catalogVersion: CATALOG_VERSION
+};
+
+// Reset si versión vieja
+if (!state.catalogVersion || state.catalogVersion < CATALOG_VERSION) {
+  state = { productos: [], locales: [...LOCALES_DEFAULT], fechas: {}, catalogVersion: CATALOG_VERSION };
+}
+if (!state.locales || state.locales.length === 0) state.locales = [...LOCALES_DEFAULT];
+
+let localActivo = 0;
+let filtroMarca = 'Todas';
+let editCtx = null; // contexto para editar fecha
+
+// ===================== JSONBIN SYNC =====================
+const JSONBIN_API_KEY = '$2a$10$Zk4NNPQgQSIWiH4TnLEnieTe9FJ5aVLKMezOFsI2VPlQw2w18Qzoq';
+const JSONBIN_BIN_ID = '6a3d8afada38895dfeff5b98';
+const JSONBIN_URL = 'https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID;
+let syncTimer = null;
+
+function setSyncStatus(status) {
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-txt');
+  if (!dot || !txt) return;
+  const map = {
+    ok:      { color: '#2dba5c', label: 'Sync OK' },
+    saving:  { color: '#f28c28', label: 'Guardando...' },
+    loading: { color: '#5c6bc0', label: 'Cargando...' },
+    error:   { color: '#f23c3c', label: 'Sin sync' },
+    offline: { color: '#7b82a8', label: 'Offline' },
+  };
+  const s = map[status] || map.offline;
+  dot.style.background = s.color;
+  txt.textContent = s.label;
+}
+
+async function pushToCloud() {
+  if (!navigator.onLine) { setSyncStatus('offline'); return; }
+  setSyncStatus('saving');
+  try {
+    const res = await fetch(JSONBIN_URL, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': JSONBIN_API_KEY,
+        'X-Bin-Versioning': 'false'
+      },
+      body: JSON.stringify({ productos: state.productos, locales: state.locales, fechas: state.fechas, catalogVersion: state.catalogVersion })
+    });
+    if (!res.ok) throw new Error(res.status);
+    setSyncStatus('ok');
+  } catch(e) { setSyncStatus('error'); }
+}
+
+async function pullFromCloud() {
+  if (!navigator.onLine) { setSyncStatus('offline'); return false; }
+  setSyncStatus('loading');
+  try {
+    const res = await fetch(JSONBIN_URL + '/latest', {
+      headers: { 'X-Master-Key': JSONBIN_API_KEY }
+    });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    const remote = data.record;
+    if (remote && remote.productos && remote.productos.length > 0) {
+      state.productos = remote.productos;
+      state.locales = remote.locales || [...LOCALES_DEFAULT];
+      state.fechas = remote.fechas || {};
+      state.catalogVersion = remote.catalogVersion || CATALOG_VERSION;
+      localStorage.setItem('venc_state', JSON.stringify(state));
+      setSyncStatus('ok');
+      return true;
+    }
+    // Cloud vacío pero tenemos datos locales: subir
+    if (state.productos.length > 0) { await pushToCloud(); }
+    else { setSyncStatus('ok'); }
+    return false;
+  } catch(e) { setSyncStatus('error'); return false; }
+}
+
+function startPolling() {
+  setInterval(async () => {
+    if (!navigator.onLine) return;
+    try {
+      const res = await fetch(JSONBIN_URL + '/latest', { headers: { 'X-Master-Key': JSONBIN_API_KEY } });
+      if (!res.ok) return;
+      const remote = (await res.json()).record;
+      const remoteKey = (remote.productos||[]).length + '|' + JSON.stringify(remote.fechas||{}).length;
+      const localKey  = state.productos.length + '|' + JSON.stringify(state.fechas||{}).length;
+      if (remoteKey !== localKey) {
+        state.productos = remote.productos;
+        state.locales = remote.locales || [...LOCALES_DEFAULT];
+        state.fechas = remote.fechas || {};
+        state.catalogVersion = remote.catalogVersion || CATALOG_VERSION;
+        localStorage.setItem('venc_state', JSON.stringify(state));
+        renderContent();
+        setSyncStatus('ok');
+        toast('Actualizado desde otro dispositivo');
+      }
+    } catch(e) {}
+  }, 30000);
+}
+
+window.addEventListener('online',  () => pushToCloud());
+window.addEventListener('offline', () => setSyncStatus('offline'));
+
+// ===================== UTILS =====================
+function save() {
+  localStorage.setItem('venc_state', JSON.stringify(state));
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => pushToCloud(), 600);
+}
+function today() {
+  const d = new Date(); d.setHours(0,0,0,0); return d;
+}
+function parseFecha(str) {
+  if (!str) return null;
+  const [y,m,d] = str.split('-').map(Number);
+  return new Date(y,m-1,d);
+}
+function diasRestantes(str) {
+  if (!str) return null;
+  const d = parseFecha(str);
+  const diff = Math.ceil((d - today()) / 86400000);
+  return diff;
+}
+function colorClass(dias) {
+  if (dias === null) return 'gray';
+  if (dias <= 3) return 'red';
+  if (dias <= 10) return 'orange';
+  return 'green';
+}
+function fmtFecha(str) {
+  if (!str) return '';
+  const [y,m,d] = str.split('-');
+  return `${d}/${m}/${y.slice(2)}`;
+}
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ===================== RENDER HEADER =====================
+function renderHeader() {
+  const opts = {weekday:'long',year:'numeric',month:'long',day:'numeric'};
+  document.getElementById('fecha-hoy').textContent = new Date().toLocaleDateString('es-UY', opts);
+}
+
+// ===================== RENDER FILTROS MARCA =====================
+function getMarcas() {
+  const set = new Set(state.productos.map(p => p.marca));
+  return Array.from(set).sort();
+}
+function setFiltroMarca(m) {
+  filtroMarca = m;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('fbtn-' + m);
+  if (btn) btn.classList.add('active');
+  renderContent();
+}
+function renderFiltrosMarca() {
+  const bar = document.getElementById('filtros-marcas');
+  const marcas = getMarcas();
+  bar.innerHTML = `<button class="filter-btn ${filtroMarca==='Todas'?'active':''}" onclick="setFiltroMarca('Todas')" id="fbtn-Todas">Todas</button>`;
+  marcas.forEach(m => {
+    const safe = m.replace(/'/g, "\\'");
+    bar.innerHTML += `<button class="filter-btn ${filtroMarca===m?'active':''}" onclick="setFiltroMarca('${safe}')" id="fbtn-${m}">${m}</button>`;
+  });
+}
+
+// ===================== RENDER LOCALES =====================
+function renderLocales() {
+  const bar = document.getElementById('local-bar');
+  let html = '';
+  state.locales.forEach((loc, i) => {
+    let criticas = 0;
+    state.productos.forEach(p => {
+      const key = p.id + '_' + i;
+      const fechas = (state.fechas[key] || []).filter(f => !f.retirada && f.fecha);
+      fechas.forEach(f => {
+        const d = diasRestantes(f.fecha);
+        if (d !== null && d <= 3) criticas++;
+      });
+    });
+    const badge = criticas > 0 ? `<span class="badge">${criticas}</span>` : '';
+    // Nombre corto para el tab (máx 12 chars)
+    const short = loc.length > 12 ? loc.slice(0,11)+'…' : loc;
+    html += `<button class="local-tab ${localActivo===i?'active':''}" onclick="setLocal(${i})" onlongpress="editarLocal(${i})">${short}${badge}</button>`;
+  });
+  html += `<button class="local-tab" onclick="openModalLocal()" style="border-style:dashed;color:var(--accent-light);flex-shrink:0">+ Super</button>`;
+  bar.innerHTML = html;
+
+  // Long press para editar en mobile
+  bar.querySelectorAll('.local-tab:not(:last-child)').forEach((btn, i) => {
+    let timer;
+    btn.addEventListener('touchstart', () => { timer = setTimeout(() => editarLocal(i), 600); });
+    btn.addEventListener('touchend', () => clearTimeout(timer));
+    btn.addEventListener('touchmove', () => clearTimeout(timer));
+  });
+}
+function setLocal(i) {
+  localActivo = i;
+  renderLocales();
+  renderContent();
+}
+
+// ===================== GESTIÓN LOCALES =====================
+let editLocalIdx = null;
+function openModalLocal() {
+  editLocalIdx = null;
+  document.getElementById('modal-local-title').textContent = 'Agregar Super';
+  document.getElementById('local-nombre').value = '';
+  document.getElementById('btn-borrar-local').style.display = 'none';
+  document.getElementById('modal-local').classList.add('open');
+}
+function editarLocal(i) {
+  editLocalIdx = i;
+  document.getElementById('modal-local-title').textContent = 'Editar Super';
+  document.getElementById('local-nombre').value = state.locales[i];
+  document.getElementById('btn-borrar-local').style.display = 'block';
+  document.getElementById('modal-local').classList.add('open');
+}
+function guardarLocal() {
+  const nombre = document.getElementById('local-nombre').value.trim().toUpperCase();
+  if (!nombre) { toast('Ingresá un nombre'); return; }
+  if (editLocalIdx !== null) {
+    state.locales[editLocalIdx] = nombre;
+    toast('Super actualizado ✓');
+  } else {
+    state.locales.push(nombre);
+    toast('Super agregado ✓');
+  }
+  save();
+  closeModal('modal-local');
+  renderLocales();
+}
+function borrarLocal() {
+  if (editLocalIdx === null) return;
+  if (state.locales.length <= 1) { toast('Debe haber al menos 1 super'); return; }
+  if (!confirm(`¿Borrar "${state.locales[editLocalIdx]}" y todas sus fechas?`)) return;
+  // Limpiar fechas de ese local
+  state.productos.forEach(p => { delete state.fechas[p.id + '_' + editLocalIdx]; });
+  // Reasignar índices de los locales posteriores
+  state.productos.forEach(p => {
+    for (let i = editLocalIdx + 1; i < state.locales.length; i++) {
+      const keyViejo = p.id + '_' + i;
+      const keyNuevo = p.id + '_' + (i - 1);
+      if (state.fechas[keyViejo]) { state.fechas[keyNuevo] = state.fechas[keyViejo]; delete state.fechas[keyViejo]; }
+    }
+  });
+  state.locales.splice(editLocalIdx, 1);
+  if (localActivo >= state.locales.length) localActivo = state.locales.length - 1;
+  save();
+  closeModal('modal-local');
+  renderLocales();
+  renderContent();
+  toast('Super eliminado');
+}
+
+// ===================== URGENCIA DE PRODUCTO EN LOCAL =====================
+function urgenciaProducto(prod, localIdx) {
+  const key = prod.id + '_' + localIdx;
+  const fechas = (state.fechas[key] || []).filter(f => !f.retirada && f.fecha);
+  if (fechas.length === 0) return 'gray';
+  const dias = fechas.map(f => diasRestantes(f.fecha)).filter(d => d !== null);
+  const min = Math.min(...dias);
+  return colorClass(min);
+}
+
+// ===================== RENDER CONTENT =====================
+function renderContent() {
+  renderFiltrosMarca();
+  renderLocales();
+  const content = document.getElementById('content');
+
+  // Productos filtrados
+  let prods = [...state.productos];
+  if (filtroMarca !== 'Todas') prods = prods.filter(p => p.marca === filtroMarca);
+
+  if (prods.length === 0) {
+    content.innerHTML = `<div class="empty-state"><div class="icon">📦</div><p>No hay productos.<br>Toca <strong>+ Producto</strong> para agregar.</p></div>`;
+    return;
+  }
+
+  // Ordenar cada producto por urgencia (rojo primero) dentro de su grupo
+  const urgOrder = {red:0, orange:1, green:2, gray:3};
+
+  // Agrupar por marca (orden alfabético de marca)
+  const grupos = {};
+  prods.forEach(p => {
+    if (!grupos[p.marca]) grupos[p.marca] = [];
+    grupos[p.marca].push(p);
+  });
+
+  // Ordenar marcas alfabéticamente
+  const marcasOrdenadas = Object.keys(grupos).sort();
+
+  let html = '';
+  marcasOrdenadas.forEach(marca => {
+    let prdsGrupo = grupos[marca];
+    // Ordenar productos del grupo por urgencia en el local activo
+    prdsGrupo.sort((a,b) => urgOrder[urgenciaProducto(a,localActivo)] - urgOrder[urgenciaProducto(b,localActivo)]);
+
+    html += `<div class="marca-group">
+      <div class="marca-header">
+        <span class="marca-name">${marca}</span>
+        <span class="marca-count">${prdsGrupo.length} producto${prdsGrupo.length!==1?'s':''}</span>
+      </div>`;
+
+    prdsGrupo.forEach(prod => {
+      const key = prod.id + '_' + localActivo;
+      const fechas = state.fechas[key] || [];
+      const urgencia = urgenciaProducto(prod, localActivo);
+      const dotClass = `dot-${urgencia}`;
+
+      // Ordenar fechas: activas por días asc, retiradas al final
+      const activas = fechas.filter(f => !f.retirada && f.fecha)
+        .sort((a,b) => diasRestantes(a.fecha) - diasRestantes(b.fecha));
+      const retiradas = fechas.filter(f => f.retirada);
+      const todasOrdenadas = [...activas, ...retiradas];
+
+      let fechasHtml = '';
+      todasOrdenadas.forEach((f, fi) => {
+        const dias = diasRestantes(f.fecha);
+        const cc = f.retirada ? 'gray' : colorClass(dias);
+        const diasTxt = f.retirada ? 'Retirada' : (dias === null ? '' : dias < 0 ? 'Vencida' : `${dias}d`);
+        const rowClass = f.retirada ? 'fecha-row retirada-row' : 'fecha-row';
+        const retBtn = f.retirada
+          ? `<button class="btn-retirar" onclick="toggleRetirada('${prod.id}',${localActivo},${fi})" style="color:var(--green-light);border-color:var(--green)">↩</button>`
+          : `<button class="btn-retirar" onclick="toggleRetirada('${prod.id}',${localActivo},${fi})">Retirar</button>`;
+        fechasHtml += `<div class="${rowClass}">
+          <div class="fecha-badge">
+            <span class="fecha-chip chip-${cc}">${fmtFecha(f.fecha)}</span>
+            <span class="dias-label label-${cc}">${diasTxt}</span>
+          </div>
+          <div class="fecha-actions">
+            ${retBtn}
+            <button class="btn-edit-fecha" onclick="openEditFecha('${prod.id}',${localActivo},${fi})">✏️</button>
+          </div>
+        </div>`;
+      });
+
+      const canAddMore = fechas.filter(f => !f.retirada).length < 3;
+      const addBtn = canAddMore
+        ? `<button class="btn-add-fecha" onclick="openModalFechaRapida('${prod.id}',${localActivo})">+ Agregar fecha</button>`
+        : '';
+
+      html += `<div class="product-card">
+        <div class="product-header" onclick="toggleCard('card-${prod.id}')">
+          <div class="product-urgency-dot ${dotClass}"></div>
+          <span class="product-name">${prod.nombre}</span>
+          <span style="color:var(--text-muted);font-size:18px" id="arrow-${prod.id}">›</span>
+        </div>
+        <div id="card-${prod.id}" style="display:none">
+          <div class="fechas-container">
+            ${fechasHtml || `<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:8px">Sin fechas cargadas</div>`}
+            ${addBtn}
+          </div>
+        </div>
+      </div>`;
+    });
+
+    html += '</div>';
+  });
+
+  content.innerHTML = html;
+}
+
+function toggleCard(id) {
+  const el = document.getElementById(id);
+  const prodId = id.replace('card-', '');
+  const arrow = document.getElementById('arrow-' + prodId);
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    arrow.textContent = '⌄';
+  } else {
+    el.style.display = 'none';
+    arrow.textContent = '›';
+  }
+}
+
+// ===================== MODAL PRODUCTO =====================
+let editProdId = null;
+function openModalProducto(prodId = null) {
+  editProdId = prodId;
+  document.getElementById('modal-producto-title').textContent = prodId ? 'Editar producto' : 'Nuevo producto';
+  if (prodId) {
+    const p = state.productos.find(x => x.id === prodId);
+    document.getElementById('prod-nombre').value = p.nombre;
+    const marcaOpts = Array.from(document.getElementById('prod-marca').options).map(o => o.value);
+    if (marcaOpts.includes(p.marca)) {
+      document.getElementById('prod-marca').value = p.marca;
+    } else {
+      document.getElementById('prod-marca').value = 'Otra';
+      document.getElementById('prod-marca-custom').value = p.marca;
+      document.getElementById('marca-custom-group').style.display = 'block';
+    }
+  } else {
+    document.getElementById('prod-nombre').value = '';
+    document.getElementById('prod-marca').value = '';
+    document.getElementById('prod-marca-custom').value = '';
+    document.getElementById('marca-custom-group').style.display = 'none';
+  }
+  document.getElementById('modal-producto').classList.add('open');
+}
+document.getElementById('prod-marca').addEventListener('change', function() {
+  document.getElementById('marca-custom-group').style.display = this.value === 'Otra' ? 'block' : 'none';
+});
+
+function guardarProducto() {
+  let marca = document.getElementById('prod-marca').value;
+  if (marca === 'Otra') marca = document.getElementById('prod-marca-custom').value.trim();
+  const nombre = document.getElementById('prod-nombre').value.trim();
+  if (!marca || !nombre) { toast('Completá todos los campos'); return; }
+
+  if (editProdId) {
+    const p = state.productos.find(x => x.id === editProdId);
+    p.marca = marca; p.nombre = nombre;
+  } else {
+    state.productos.push({ id: genId(), marca, nombre });
+  }
+  save();
+  closeModal('modal-producto');
+  renderContent();
+  toast(editProdId ? 'Producto actualizado' : 'Producto agregado ✓');
+}
+
+// ===================== MODAL FECHAS RÁPIDO =====================
+let fechaCtxProd = null;
+let fechaCtxLocal = null;
+let fechaSlots = []; // [{dd:'', mm:''}]
+
+function onLocalSelChange() {
+  const idx = parseInt(document.getElementById('fecha-local-sel').value);
+  if (!isNaN(idx)) {
+    fechaCtxLocal = idx;
+    buildFechaRapidaUI('fecha-rapida-container', false);
+  }
+}
+
+function openModalFecha(prodId) {
+  fechaCtxProd = prodId;
+  fechaCtxLocal = null;
+  const sel = document.getElementById('fecha-local-sel');
+  sel.innerHTML = '<option value="">Seleccionar...</option>';
+  state.locales.forEach((l,i) => sel.innerHTML += `<option value="${i}">${l}</option>`);
+  sel.value = '';
+  document.getElementById('fecha-local-group').style.display = 'block';
+  document.getElementById('modal-fecha-title').textContent = 'Agregar fecha';
+  fechaSlots = [{}];
+  document.getElementById('fecha-rapida-container').innerHTML = '';
+  document.getElementById('modal-fecha').classList.add('open');
+}
+
+function openModalFechaRapida(prodId, localIdx) {
+  fechaCtxProd = prodId;
+  fechaCtxLocal = localIdx;
+  const sel = document.getElementById('fecha-local-sel');
+  sel.innerHTML = '<option value="">Seleccionar...</option>';
+  state.locales.forEach((l,i) => sel.innerHTML += `<option value="${i}">${l}</option>`);
+  sel.value = localIdx;
+  document.getElementById('fecha-local-group').style.display = 'none';
+  document.getElementById('modal-fecha-title').textContent = state.locales[localIdx];
+  fechaSlots = [{}];
+  buildFechaRapidaUI('fecha-rapida-container', false);
+  document.getElementById('modal-fecha').classList.add('open');
+  // foco inmediato
+  setTimeout(() => { const f = document.querySelector('#fecha-rapida-container .fi-dd'); if(f) f.focus(); }, 50);
+}
+
+function buildFechaRapidaUI(containerId, isEdit) {
+  const c = document.getElementById(containerId);
+  // Contar activas existentes
+  const key = fechaCtxProd + '_' + fechaCtxLocal;
+  const activasExistentes = (state.fechas[key] || []).filter(f => !f.retirada).length;
+  const maxSlots = Math.min(3 - activasExistentes, isEdit ? 1 : 3);
+
+  if (fechaSlots.length > maxSlots) fechaSlots = fechaSlots.slice(0, maxSlots);
+
+  let html = '';
+  fechaSlots.forEach((slot, i) => {
+    const labels = ['1ra fecha','2da fecha','3ra fecha'];
+    const ddVal = slot.dd || '';
+    const mmVal = slot.mm || '';
+    html += `<div class="fecha-rapida-row" id="slot-row-${i}">
+      <span class="fecha-rapida-label">${isEdit ? 'Nueva' : labels[i]}</span>
+      <div class="fecha-rapida-inputs ${ddVal&&mmVal?'filled':''}" id="slot-wrap-${i}">
+        <input class="fi fi-dd" id="fi-dd-${i}" type="tel" maxlength="2" placeholder="DD" value="${ddVal}"
+          oninput="onFiInput(this,${i},'dd')" onfocus="this.select();onFiFocus(${i})" onblur="onFiBlur(${i})">
+        <span class="fi-sep">/</span>
+        <input class="fi fi-mm" id="fi-mm-${i}" type="tel" maxlength="2" placeholder="MM" value="${mmVal}"
+          oninput="onFiInput(this,${i},'mm')" onfocus="this.select();onFiFocus(${i})" onblur="onFiBlur(${i})"
+          onkeydown="onMmKeydown(event,${i})">
+        <span class="fecha-rapida-check ${ddVal&&mmVal?'show':''}" id="slot-check-${i}">✓</span>
+      </div>
+    </div>`;
+  });
+
+  if (!isEdit && fechaSlots.length < maxSlots) {
+    html += `<button class="fecha-rapida-add" onclick="addSlot('${containerId}')">+ Otra fecha</button>`;
+  }
+
+  html += `<button class="fecha-rapida-save" onclick="${isEdit?'guardarEditFechaRapida()':'guardarFechasRapidas()'}">${isEdit?'Actualizar':'Guardar'}</button>`;
+  c.innerHTML = html;
+}
+
+function onFiFocus(i) {
+  document.getElementById('slot-wrap-'+i).classList.add('focused');
+}
+function onFiBlur(i) {
+  document.getElementById('slot-wrap-'+i).classList.remove('focused');
+}
+
+function onFiInput(el, i, part) {
+  let v = el.value.replace(/\D/g,'');
+  if (part === 'dd') {
+    if (v.length === 1 && parseInt(v) > 3) v = '0' + v;
+    el.value = v;
+    fechaSlots[i] = fechaSlots[i] || {};
+    fechaSlots[i].dd = v;
+    if (v.length === 2) {
+      const mm = document.getElementById('fi-mm-'+i);
+      mm.focus(); mm.select();
+    }
+  }
+  if (part === 'mm') {
+    if (v.length === 1 && parseInt(v) > 1) v = '0' + v;
+    el.value = v;
+    fechaSlots[i] = fechaSlots[i] || {};
+    fechaSlots[i].mm = v;
+    if (v.length === 2) {
+      updateSlotCheck(i);
+      // Saltar al siguiente slot si existe
+      const nextDD = document.getElementById('fi-dd-'+(i+1));
+      if (nextDD) { nextDD.focus(); nextDD.select(); return; }
+      // Último slot completo: guardar automático
+      const allFull = fechaSlots.every(s => s.dd && s.dd.length===2 && s.mm && s.mm.length===2);
+      if (allFull) {
+        setTimeout(() => {
+          if (document.getElementById('modal-edit-fecha').classList.contains('open')) {
+            guardarEditFechaRapida();
+          } else {
+            guardarFechasRapidas();
+          }
+        }, 60);
+      }
+    }
+  }
+}
+
+function onMmKeydown(e, i) {
+  // Backspace en MM vacío → volver a DD
+  if (e.key === 'Backspace' && !e.target.value) {
+    document.getElementById('fi-dd-'+i).focus();
+  }
+}
+
+function updateSlotCheck(i) {
+  const s = fechaSlots[i] || {};
+  const filled = s.dd && s.dd.length===2 && s.mm && s.mm.length===2;
+  const wrap = document.getElementById('slot-wrap-'+i);
+  const check = document.getElementById('slot-check-'+i);
+  if (wrap) wrap.classList.toggle('filled', !!filled);
+  if (check) check.classList.toggle('show', !!filled);
+}
+
+function addSlot(containerId) {
+  const isEdit = containerId !== 'fecha-rapida-container';
+  fechaSlots.push({});
+  buildFechaRapidaUI(containerId, isEdit);
+  // foco en el nuevo slot
+  setTimeout(() => {
+    const idx = fechaSlots.length - 1;
+    const f = document.getElementById('fi-dd-'+idx);
+    if (f) { f.focus(); f.select(); }
+  }, 30);
+}
+
+function ddmmToISO(dd, mm) {
+  const year = new Date().getFullYear();
+  const d = parseInt(dd), m = parseInt(mm);
+  // Si la fecha ya pasó este año, usar año siguiente
+  const fecha = new Date(year, m-1, d);
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  if (fecha < hoy) fecha.setFullYear(year + 1);
+  return fecha.toISOString().slice(0,10);
+}
+
+function guardarFechasRapidas() {
+  const localIdx = fechaCtxLocal !== null ? fechaCtxLocal : parseInt(document.getElementById('fecha-local-sel').value);
+  if (isNaN(localIdx) || localIdx === null) { toast('Seleccioná un super'); return; }
+
+  const validas = fechaSlots.filter(s => s.dd && s.dd.length===2 && s.mm && s.mm.length===2);
+  if (validas.length === 0) { toast('Ingresá al menos una fecha'); return; }
+
+  const key = fechaCtxProd + '_' + localIdx;
+  if (!state.fechas[key]) state.fechas[key] = [];
+  const activasActuales = state.fechas[key].filter(f => !f.retirada).length;
+  if (activasActuales + validas.length > 3) {
+    toast(`Máximo 3 fechas. Ya hay ${activasActuales}.`); return;
+  }
+  validas.forEach(s => {
+    state.fechas[key].push({ fecha: ddmmToISO(s.dd, s.mm), retirada: false });
+  });
+  save();
+  closeModal('modal-fecha');
+  setLocal(localIdx);
+  toast(`${validas.length} fecha${validas.length>1?'s':''} guardada${validas.length>1?'s':''} ✓`);
+}
+
+// ===================== MODAL EDITAR FECHA =====================
+function openEditFecha(prodId, localIdx, fechaIdx) {
+  editCtx = { prodId, localIdx, fechaIdx };
+  const key = prodId + '_' + localIdx;
+  const f = state.fechas[key][fechaIdx];
+  // Parsear fecha existente a DD/MM
+  let dd = '', mm = '';
+  if (f.fecha) {
+    const [,m,d] = f.fecha.split('-');
+    dd = d; mm = m;
+  }
+  fechaSlots = [{dd, mm}];
+  fechaCtxProd = prodId;
+  fechaCtxLocal = localIdx;
+  buildFechaRapidaUI('edit-fecha-rapida', true);
+  document.getElementById('modal-edit-fecha').classList.add('open');
+  setTimeout(() => { const fi = document.querySelector('#edit-fecha-rapida .fi-dd'); if(fi){fi.select();fi.focus();} }, 50);
+}
+
+function guardarEditFechaRapida() {
+  const s = fechaSlots[0];
+  if (!s || !s.dd || !s.mm || s.dd.length<2 || s.mm.length<2) { toast('Fecha incompleta'); return; }
+  const { prodId, localIdx, fechaIdx } = editCtx;
+  const key = prodId + '_' + localIdx;
+  state.fechas[key][fechaIdx].fecha = ddmmToISO(s.dd, s.mm);
+  state.fechas[key][fechaIdx].retirada = false;
+  save();
+  closeModal('modal-edit-fecha');
+  renderContent();
+  const card = document.getElementById('card-' + prodId);
+  if (card) { card.style.display='block'; document.getElementById('arrow-'+prodId).textContent='⌄'; }
+  toast('Fecha actualizada ✓');
+}
+
+// funciones legacy que quedaron referenciadas (no usadas)
+function resetDateFields(){}
+function addDateField(){}
+function removeDateField(){}
+function guardarFechas(){ guardarFechasRapidas(); }
+function guardarEditFecha(){ guardarEditFechaRapida(); }
+
+// ===================== RETIRAR =====================
+function toggleRetirada(prodId, localIdx, fechaIdx) {
+  const key = prodId + '_' + localIdx;
+  const f = state.fechas[key][fechaIdx];
+  f.retirada = !f.retirada;
+  save();
+  renderContent();
+  // Re-abrir la card
+  const card = document.getElementById('card-' + prodId);
+  if (card) { card.style.display = 'block'; document.getElementById('arrow-' + prodId).textContent = '⌄'; }
+  toast(f.retirada ? 'Marcado como retirado' : 'Marcado como activo');
+}
+
+// ===================== MODAL UTILS =====================
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+// Cerrar al tocar overlay
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+});
+
+// ===================== CATÁLOGO TATA 403 =====================
+function cargarDemo() {
+  if (state.productos.length > 0) return;
+  const catalogo = [
+    // YOGURES SER
+    {marca:'SER', nombre:'Yogur SER+Fort DESC Sach 1000g Frutilla'},
+    {marca:'SER', nombre:'SER Bebble 1000g Natural Sachet'},
+    {marca:'SER', nombre:'Yogur SER c/Cereal Pote 166g'},
+    {marca:'SER', nombre:'Ser Cremoso Pote 180g'},
+    {marca:'SER', nombre:'Yogur SER Batido Pote 460g'},
+    {marca:'SER', nombre:'Yogur SER Batido Pote 460g con Durazno'},
+    {marca:'SER', nombre:'Ser Yogur Pote 460g con Frutilla Chia'},
+    {marca:'SER', nombre:'SER Yogur Big Pot Frutos Rojos 460g'},
+    {marca:'SER', nombre:'SER Colchón Frutilla Arándanos y Granada 175g'},
+    {marca:'SER', nombre:'Yogur SER con Cereales Berries x155g'},
+    {marca:'SER', nombre:'Ser LIBRE Bebible Mix de Frutas BT 190g'},
+    {marca:'SER', nombre:'SER Yogur Deslactosado Natural 460g'},
+    {marca:'SER', nombre:'SER Yogur Deslactosado Arándanos 460g'},
+    {marca:'SER', nombre:'SER Yogur Deslactosado Frutilla 460g'},
+    {marca:'SER', nombre:'Ser Natur Deslactosado Frutilla BT 190g'},
+    {marca:'SER', nombre:'Ser Calci - Frutilla y Arándanos x1 de 120g'},
+    {marca:'SER', nombre:'Ser Pro+ Bebible Vainilla BT 190g'},
+    {marca:'SER', nombre:'Ser Pro+ Frutilla / Arándanos BT 190g'},
+    {marca:'SER', nombre:'Ser Pro+ Pote 175g Natural'},
+    {marca:'SER', nombre:'Ser Pro+ Pote 175g Frutos Rojos'},
+    // POSTRES SER
+    {marca:'SER', nombre:'Ser Flan 2x95g - Vainilla'},
+    {marca:'SER', nombre:'Ser Flan Pack x4 380g'},
+    {marca:'SER', nombre:'Ser Postre 2x100g - Dulce de Leche'},
+    {marca:'SER', nombre:'Ser Postre 2x100g - Chocolate'},
+    {marca:'SER', nombre:'SER Gelatina Pote 120g - Frutilla'},
+    {marca:'SER', nombre:'SER Gelatina Pote 120g - Cereza'},
+    // YOGURÍSIMO Y GRIEGO
+    {marca:'Yogurísimo', nombre:'Yogurísimo Sachet 1000g Frutilla'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Sachet 1000g Natural'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Sachet 1000g Durazno'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Sachet 1000g Selección Natural'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Sachet 1000g Selección Frutilla'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Selección Vainilla Sachet 1000g'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Selección Durazno Sachet 1000g'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Integral Pote 190g Natural'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Natural s/Azúcar 190g'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Integral Pote 460g'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo s/Endulzar Pote 460g'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Natural Frutilla 460g'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Natural Arnadanos 460g'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Integral Pote 460g - Con Durazno'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Integral Pote 460g - Sabor Vainilla'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Pote 460g - Selección Frutos Rojos'},
+    {marca:'Yogurísimo', nombre:'Pack Yogurísimo READY Zucaritas x3 492g'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Capuchón c/Cereales UY'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Capuchón Granola UY'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Cremix Frutilla'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Bebible Frutilla BT 190g'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Licuado Frutilla y Granola'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Licuado Mago Coco y Sésamo'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Griego PT 125g - Natural con Azúcar'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Griego PT 125g - Natural con Frutilla'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Griego PT 125g - Natural con Arándanos'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Griego PT 460g - Natural con Azúcar'},
+    {marca:'Yogurísimo', nombre:'Yogurísimo Griego PT 460g - Natural sin Azúcar'},
+    {marca:'Yogurísimo', nombre:'Griego Pack x2 180g - Natural'},
+    {marca:'Yogurísimo', nombre:'Griego Pack x2 180g Frutos Rojos'},
+    // ACTIVIA Y ACTIMEL
+    {marca:'Activia', nombre:'Activia Pack x4 - 340g - Ciruela'},
+    {marca:'Activia', nombre:'Activia Botella - 170g - Cir'},
+    {marca:'Activia', nombre:'Activia Botella Ciruela Zero 170g'},
+    {marca:'Activia', nombre:'Activia Sachet - 1000g Ciruela'},
+    {marca:'Actimel', nombre:'Actimel Pack 600g Natural'},
+    {marca:'Actimel', nombre:'Actimel Pack 600g Frutilla'},
+    {marca:'Actimel', nombre:'Actimel Pack 600g Multifruta'},
+    {marca:'Actimel', nombre:'Actimel Pack 600g Vitamina C'},
+    // CASANCREM
+    {marca:'CasanCrem', nombre:'CasanCrem 290g Entero Fort. B3'},
+    {marca:'CasanCrem', nombre:'CasanCrem 290g Light Fort. B3'},
+    {marca:'CasanCrem', nombre:'CasanCrem 290g Light Sin Sal Agregada'},
+    {marca:'CasanCrem', nombre:'CasanCrem 500g Entero Fort. B3'},
+    {marca:'CasanCrem', nombre:'CasanCrem 500g Light Fort. B3'},
+    // QUESOS Y HORMAS LA SERENÍSIMA
+    {marca:'La Serenísima', nombre:'Queso Finlandia LS Light Pote 180g'},
+    {marca:'La Serenísima', nombre:'Queso Finlandia LS Procesado Pote 180g'},
+    {marca:'La Serenísima', nombre:'Queso Finlandia Light Sin Sal 180g'},
+    {marca:'La Serenísima', nombre:'Queso LS Cremon Light (Vta. Unidad)'},
+    {marca:'La Serenísima', nombre:'Queso LS Port Salut (Vta. Unidad)'},
+    {marca:'La Serenísima', nombre:'Queso LS Cremon (Vta. Unidad)'},
+    {marca:'La Serenísima', nombre:'Queso LS Port Salut Light (Vta. Unidad)'},
+    // SERENITO
+    {marca:'Serenito', nombre:'Postre Sere Bombas Croc 118g'},
+    {marca:'Serenito', nombre:'Postre Sere Confites Pote 120g Vai'},
+    {marca:'Serenito', nombre:'Serenito Pack x3 con Rocklets 360g'},
+    {marca:'Serenito', nombre:'Serenito Wau Vainilla x2 100g'},
+    {marca:'Serenito', nombre:'Promo Serenito 2 Pack x2 - 400g Vainilla'},
+    {marca:'Serenito', nombre:'Serenito Gelatina Pote 120g - Frutilla'},
+    {marca:'Serenito', nombre:'Serenito Gelatina Pote 120g - Manzana'},
+    // DANETTE
+    {marca:'Danette', nombre:'Danette Postre 2x95g - Dulce de Leche'},
+    {marca:'Danette', nombre:'Danette Postre 2x95g - Chocolate'},
+    {marca:'Danette', nombre:'Danette Postre 2x95g - Crema Americana'},
+    {marca:'Danette', nombre:'Danette Flan 2x95g - Vainilla'},
+    {marca:'Danette', nombre:'Promo Danette 2 Pack x2 - 380g DDL'},
+    {marca:'Danette', nombre:'Promo Danette 2 Pack x2 - 380g Choco'},
+    {marca:'Danette', nombre:'Promo Danette 2 Pack x2 - 380g Crema'},
+    {marca:'Danette', nombre:'Flan Danette x4 - 380g - Vainilla'},
+    {marca:'Danette', nombre:'Danette x6 Flan - 570g'},
+    {marca:'Danette', nombre:'Promo Danette + M&M Packx2 - 220g Choco'},
+    {marca:'Danette', nombre:'Danette Chocolate + Bon o Bon - 221.2g'},
+    {marca:'Danette', nombre:'Postre Danette Copa 100g DL'},
+    {marca:'Danette', nombre:'Postre Danette Copa 100g Choco'},
+    // DANONINO
+    {marca:'Danonino', nombre:'Danonino FFS 80.5g x2 Frutilla'},
+    {marca:'Danonino', nombre:'Danonino FFS 80.5g x2 Vainilla'},
+    {marca:'Danonino', nombre:'Danonino Bebible +Forti 185g Vainilla'},
+    {marca:'Danonino', nombre:'Danonino Bebible +Forti 185g Frutilla'},
+    {marca:'Danonino', nombre:'P.Danonino 3 Bot 555g Frutilla'},
+    {marca:'Danonino', nombre:'Danoninho Pronto Para Beber Mor x1 100ml'},
+    // CITRIC
+    {marca:'Citric', nombre:'Citric Tetra 1000g - Naranja'},
+    {marca:'Citric', nombre:'Citric Tetra 1000g - Pomelo'},
+    {marca:'Citric', nombre:'Citric Tetra 1000g - Dur/Narja'},
+    {marca:'Citric', nombre:'Citric Tetra 1000g - Fr-Narjna'},
+    {marca:'Citric', nombre:'Citric Tetra 1000g Nar Mango'},
+    {marca:'Citric', nombre:'Naranja / Zanahoria 1lt'},
+    {marca:'Citric', nombre:'Naranja y Durazno de 500ml'},
+    {marca:'Citric', nombre:'Citric Tetra 500g Naranja'},
+    {marca:'Citric', nombre:'Citric Tetra 1500g Narja'},
+    {marca:'Citric', nombre:'Citric Bidón 3lt - Naranja'},
+    // LECHES Y CHOCOLATADAS
+    {marca:'La Serenísima', nombre:'Leche 0% Lactosa 1lt'},
+    {marca:'La Serenísima', nombre:'La Serenísima Leche Entera Botella 1000g'},
+    {marca:'La Serenísima', nombre:'La Serenísima Leche Descremada Botella 1000g'},
+    {marca:'La Serenísima', nombre:'Leche en Polvo 0% Lactosa'},
+    {marca:'La Serenísima', nombre:'La Serenísima Leche Desc con Hierro BT 1000g'},
+    {marca:'La Serenísima', nombre:'Chocolatada Cindor Mocha 1lt'},
+    {marca:'La Serenísima', nombre:'Chocolatada Cindor 1lt'},
+    {marca:'La Serenísima', nombre:'Chocolatada Cindor 200cc + sorbito'},
+    // SILK
+    {marca:'Silk', nombre:'Leche Almendras Chocolate 1lt (Argentina)'},
+    {marca:'Silk', nombre:'Leche Almendra s/endulzar 1lt (Argentina)'},
+    {marca:'Silk', nombre:'Leche Almendra Natural 1lt (Argentina)'},
+    {marca:'Silk', nombre:'Leche Almendra Vainilla sin azúcar 1lt (Argentina)'},
+    {marca:'Silk', nombre:'Bebida de Coco sin Azúcar 1lt (Argentina)'},
+    {marca:'Silk', nombre:'Leche Almendra Vainilla con Azúcar 946ml'},
+    {marca:'Silk', nombre:'Bebida Avena sin Azúcar 946ml'},
+    {marca:'Silk', nombre:'Bebida Soja 946ml'},
+    {marca:'Silk', nombre:'Leche Almendras Chocolate 190ml'},
+    // LEVADURA LEVEX
+    {marca:'Levex', nombre:'Levadura Fresca Levex en Cubitos x10 50g'},
+  ];
+
+  catalogo.forEach(d => {
+    const id = genId();
+    state.productos.push({id, ...d});
+  });
+  save();
+}
+
+// ===================== INIT =====================
+async function init() {
+  renderHeader();
+  cargarDemo();
+  const updated = await pullFromCloud();
+  if (updated) renderContent();
+  else renderContent();
+  startPolling();
+}
+
+init();
+</script>
+</body>
+</html>

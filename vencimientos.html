@@ -715,7 +715,7 @@ async function pushToCloud() {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'X-Master-Key': JSONBIN_API_KEY,
+        'X-Access-Key': JSONBIN_API_KEY,
         'X-Bin-Versioning': 'false'
       },
       body: JSON.stringify({ productos: state.productos, locales: state.locales, fechas: state.fechas, catalogVersion: state.catalogVersion })
@@ -739,7 +739,7 @@ async function pullFromCloud() {
   setSyncStatus('loading');
   try {
     const res = await fetch(JSONBIN_URL + '/latest', {
-      headers: { 'X-Master-Key': JSONBIN_API_KEY }
+      headers: { 'X-Access-Key': JSONBIN_API_KEY }
     });
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
@@ -764,7 +764,7 @@ function startPolling() {
   setInterval(async () => {
     if (!navigator.onLine) return;
     try {
-      const res = await fetch(JSONBIN_URL + '/latest', { headers: { 'X-Master-Key': JSONBIN_API_KEY } });
+      const res = await fetch(JSONBIN_URL + '/latest', { headers: { 'X-Access-Key': JSONBIN_API_KEY } });
       if (!res.ok) return;
       const remote = (await res.json()).record;
       const remoteKey = (remote.productos||[]).length + '|' + JSON.stringify(remote.fechas||{}).length;

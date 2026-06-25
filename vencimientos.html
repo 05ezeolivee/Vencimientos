@@ -182,7 +182,48 @@
     border-radius: 10px;
     margin-bottom: 8px;
     overflow: hidden;
+    position: relative;
   }
+
+  /* Círculo grande de vencimiento */
+  .vto-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.35);
+  }
+  .vto-circle.card-red    { background: var(--red-light); box-shadow: 0 0 8px var(--red-light); }
+  .vto-circle.card-orange { background: var(--orange-light); }
+  .vto-circle.card-green  { background: var(--green-light); }
+  .vto-circle.card-gray   { background: var(--gray-light); }
+
+  /* Círculo grande de venta */
+  .venta-strip {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.35);
+  }
+  .venta-strip.venta-bien { background: var(--green-light); border-color: var(--green-light); }
+  .venta-strip.venta-maso { background: var(--orange-light); border-color: var(--orange-light); }
+  .venta-strip.venta-poco { background: var(--red-light); border-color: var(--red-light); }
+  .venta-strip.venta-no_trabaja { background: transparent; border-color: var(--gray-light); color: var(--gray-light); text-shadow: none; }
+  .venta-strip.venta-sin { background: var(--surface2); border-color: var(--border); color: var(--text-muted); text-shadow: none; }
   .product-header {
     display: flex;
     align-items: center;
@@ -195,16 +236,45 @@
     font-weight: 600;
     flex: 1;
   }
-  .product-urgency-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
+  .product-urgency-dot { display: none; }
+
+  .venta-dot { display: none; }
+
+  .btn-venta {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
-  .dot-red { background: var(--red-light); box-shadow: 0 0 6px var(--red-light); }
-  .dot-orange { background: var(--orange-light); }
-  .dot-green { background: var(--green-light); }
-  .dot-gray { background: var(--gray-light); }
+  .venta-opt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 13px;
+  }
+  .venta-opt.selected { border-color: var(--accent); background: var(--surface); }
+  .venta-opt .venta-swatch {
+    width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0;
+    border: 1px solid var(--border);
+  }
+  .venta-swatch.venta-bien { background: var(--green-light); }
+  .venta-swatch.venta-maso { background: var(--orange-light); }
+  .venta-swatch.venta-poco { background: var(--red-light); }
+  .venta-swatch.venta-no_trabaja { background: transparent; border: 1px solid var(--gray-light); }
+  .venta-swatch.venta-sin { background: var(--surface2); }
 
   .product-summary {
     display: flex;
@@ -661,25 +731,39 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-venta">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="venta-modal-title">Venta</span>
+      <button class="modal-close" onclick="closeModal('modal-venta')">✕</button>
+    </div>
+    <div id="venta-opciones"></div>
+    <button class="btn-secondary" onclick="closeModal('modal-venta')">Cancelar</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 // ===================== DATA =====================
 const LOCALES_DEFAULT = ['DEVOTO 16','DISCO 15','DORADO POLAKOF','EXPRESS RODALIR','TATA 306','TATA 403','TATA 329'];
-const CATALOG_VERSION = 3;
+const CATALOG_VERSION = 4;
 
 let state = JSON.parse(localStorage.getItem('venc_state') || 'null') || {
   productos: [],
   locales: [...LOCALES_DEFAULT],
   fechas: {},
+  ventas: {},
   catalogVersion: CATALOG_VERSION
 };
 
-// Reset si versión vieja
-if (!state.catalogVersion || state.catalogVersion < CATALOG_VERSION) {
-  state = { productos: [], locales: [...LOCALES_DEFAULT], fechas: {}, catalogVersion: CATALOG_VERSION };
+// Reset si versión vieja (v4 solo agrega 'ventas', conservamos datos existentes)
+if (!state.catalogVersion || state.catalogVersion < 4) {
+  state.ventas = state.ventas || {};
+  state.catalogVersion = CATALOG_VERSION;
 }
 if (!state.locales || state.locales.length === 0) state.locales = [...LOCALES_DEFAULT];
+if (!state.ventas) state.ventas = {};
 
 let localActivo = 0;
 let filtroMarca = 'Todas';
@@ -718,7 +802,7 @@ async function pushToCloud() {
         'X-Access-Key': JSONBIN_API_KEY,
         'X-Bin-Versioning': 'false'
       },
-      body: JSON.stringify({ productos: state.productos, locales: state.locales, fechas: state.fechas, catalogVersion: state.catalogVersion })
+      body: JSON.stringify({ productos: state.productos, locales: state.locales, fechas: state.fechas, ventas: state.ventas, catalogVersion: state.catalogVersion })
     });
     if (!res.ok) throw new Error(res.status);
     setSyncStatus('ok');
@@ -748,6 +832,7 @@ async function pullFromCloud() {
       state.productos = remote.productos;
       state.locales = remote.locales || [...LOCALES_DEFAULT];
       state.fechas = remote.fechas || {};
+      state.ventas = remote.ventas || {};
       state.catalogVersion = remote.catalogVersion || CATALOG_VERSION;
       localStorage.setItem('venc_state', JSON.stringify(state));
       setSyncStatus('ok');
@@ -773,6 +858,7 @@ function startPolling() {
         state.productos = remote.productos;
         state.locales = remote.locales || [...LOCALES_DEFAULT];
         state.fechas = remote.fechas || {};
+        state.ventas = remote.ventas || {};
         state.catalogVersion = remote.catalogVersion || CATALOG_VERSION;
         localStorage.setItem('venc_state', JSON.stringify(state));
         renderContent();
@@ -952,6 +1038,43 @@ function urgenciaProducto(prod, localIdx) {
   return colorClass(min);
 }
 
+// ===================== VENTA DE PRODUCTO EN LOCAL =====================
+const VENTA_LABELS = { bien: 'Vende bien', maso: 'Vende más o menos', poco: 'Vende poco', no_trabaja: 'No se trabaja' };
+function ventaEstado(prodId, localIdx) {
+  return state.ventas[prodId + '_' + localIdx] || null; // null = sin marcar
+}
+function setVenta(prodId, localIdx, valor) {
+  const key = prodId + '_' + localIdx;
+  if (valor === null) delete state.ventas[key];
+  else state.ventas[key] = valor;
+  save();
+  closeModal('modal-venta');
+  renderContent();
+}
+let ventaCtx = null;
+function openModalVenta(prodId, localIdx) {
+  ventaCtx = { prodId, localIdx };
+  const actual = ventaEstado(prodId, localIdx);
+  const prod = state.productos.find(p => p.id === prodId);
+  document.getElementById('venta-modal-title').textContent = prod ? prod.nombre : 'Venta';
+  const cont = document.getElementById('venta-opciones');
+  const opciones = [
+    { v: 'bien', cls: 'venta-bien' },
+    { v: 'maso', cls: 'venta-maso' },
+    { v: 'poco', cls: 'venta-poco' },
+    { v: 'no_trabaja', cls: 'venta-no_trabaja' }
+  ];
+  cont.innerHTML = opciones.map(o => `
+    <div class="venta-opt ${actual===o.v?'selected':''}" onclick="setVenta('${prodId}',${localIdx},'${o.v}')">
+      <span class="venta-swatch ${o.cls}"></span>
+      <span>${VENTA_LABELS[o.v]}</span>
+    </div>`).join('');
+  if (actual) {
+    cont.innerHTML += `<div class="venta-opt" onclick="setVenta('${prodId}',${localIdx},null)" style="justify-content:center;color:var(--text-muted)">Quitar marca</div>`;
+  }
+  document.getElementById('modal-venta').classList.add('open');
+}
+
 // ===================== RENDER CONTENT =====================
 function renderContent() {
   renderFiltrosMarca();
@@ -996,7 +1119,7 @@ function renderContent() {
       const key = prod.id + '_' + localActivo;
       const fechas = state.fechas[key] || [];
       const urgencia = urgenciaProducto(prod, localActivo);
-      const dotClass = `dot-${urgencia}`;
+      const venta = ventaEstado(prod.id, localActivo);
 
       // Ordenar fechas: activas por días asc, retiradas al final
       const activas = fechas.filter(f => !f.retirada && f.fecha)
@@ -1032,14 +1155,18 @@ function renderContent() {
 
       html += `<div class="product-card">
         <div class="product-header" onclick="toggleCard('card-${prod.id}')">
-          <div class="product-urgency-dot ${dotClass}"></div>
+          <div class="vto-circle card-${urgencia}">F</div>
           <span class="product-name">${prod.nombre}</span>
+          <span class="venta-strip venta-${venta || 'sin'}" title="${venta ? VENTA_LABELS[venta] : 'Sin marcar'}">V</span>
           <span style="color:var(--text-muted);font-size:18px" id="arrow-${prod.id}">›</span>
         </div>
         <div id="card-${prod.id}" style="display:none">
           <div class="fechas-container">
             ${fechasHtml || `<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:8px">Sin fechas cargadas</div>`}
             ${addBtn}
+            <button class="btn-venta" onclick="openModalVenta('${prod.id}',${localActivo})">
+              <span class="venta-swatch venta-${venta || 'sin'}"></span> ${venta ? VENTA_LABELS[venta] : 'Marcar venta'}
+            </button>
           </div>
         </div>
       </div>`;
